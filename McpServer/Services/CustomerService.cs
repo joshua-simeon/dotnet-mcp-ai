@@ -16,4 +16,9 @@ public class CustomerService
     {
         return _repository.GetCustomer(customerId);
     }
+
+    public IReadOnlyList<Customer> SearchCustomersByName(string name)
+    {
+        return _repository.SearchCustomersByName(name);
+    }
 }

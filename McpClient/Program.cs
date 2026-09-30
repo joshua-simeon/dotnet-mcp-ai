@@ -1,5 +1,29 @@
 ﻿using ModelContextProtocol.Client;
+using Google.GenAI;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.AI;
 
+var configuration = new ConfigurationBuilder()
+    .AddUserSecrets<Program>()
+    .Build();
+
+var apiKey = configuration["Gemini:ApiKey"]
+    ?? throw new InvalidOperationException(
+        "Gemini API key is not configured.");
+
+var geminiClient = new Client(apiKey: apiKey);
+// var response = await geminiClient.Models.GenerateContentAsync(
+//     model: "gemini-flash-latest",
+//     contents: "Say hello in one sentence.");
+
+// var response = await geminiClient.Models.GenerateContentAsync(
+//     model: "gemini-3.6-flash",
+//     contents: "Say hello in one sentence.");
+
+// Console.WriteLine(
+//     response.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text
+//     ?? string.Empty);
+      
 var clientTransport = new StdioClientTransport(
     new StdioClientTransportOptions
     {
@@ -27,7 +51,31 @@ foreach (var tool in tools)
     Console.WriteLine($"- {tool.Name}: {tool.Description}");
 }
 
+IChatClient chatClient =
+    new Client(apiKey: apiKey)
+        .AsIChatClient("gemini-3.6-flash")
+        .AsBuilder()
+        .UseFunctionInvocation()
+        .Build();
+
+var chatOptions = new ChatOptions
+{
+    Tools = [.. tools]
+};
+
+// var responseGoog = await chatClient.GetResponseAsync(
+//     "Find the customer named Bob.",
+//     chatOptions);
+
+Console.Write("Enter your request: ");
+var userPrompt = Console.ReadLine() ?? string.Empty;
+var responseGoog = await chatClient.GetResponseAsync(userPrompt, chatOptions);
+
 Console.WriteLine();
+Console.WriteLine("Gemini response:");
+Console.WriteLine(responseGoog.Text);
+
+Console.WriteLine("Non-Gemini calling");
 Console.WriteLine("Calling GetGreeting...");
 
 var greetingTool = tools.First(t => t.Name.ToLower() == "get_greeting");
@@ -60,6 +108,24 @@ Console.WriteLine();
 Console.WriteLine("Customer result:");
 
 foreach (var content in customerResult.Content)
+{
+    Console.WriteLine(content);
+}
+
+Console.WriteLine();
+Console.WriteLine("Calling Search Customer...");
+
+var customerSearchResult = await client.CallToolAsync(
+    "search_customer_by_name",
+    new Dictionary<string, object?>
+    {
+        ["name"] = "smith"
+    });
+
+Console.WriteLine();
+Console.WriteLine("Customer result by name:");
+
+foreach (var content in customerSearchResult.Content)
 {
     Console.WriteLine(content);
 }

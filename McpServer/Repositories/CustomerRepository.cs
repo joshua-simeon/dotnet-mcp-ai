@@ -19,4 +19,12 @@ public class CustomerRepository : ICustomerRepository
             .AsNoTracking()
             .FirstOrDefault(c => c.Id == customerId);
     }
+
+    public IReadOnlyList<Customer> SearchCustomersByName(string name)
+    {
+        return _db.Customers
+            .AsNoTracking()
+            .Where(c => c.Name.Contains(name))
+            .ToList();
+    }
 }
