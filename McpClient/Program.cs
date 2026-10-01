@@ -2,6 +2,14 @@
 using Google.GenAI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
+
+using var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder
+        .AddConsole()
+        .SetMinimumLevel(LogLevel.Debug);
+});
 
 var configuration = new ConfigurationBuilder()
     .AddUserSecrets<Program>()
@@ -23,7 +31,7 @@ var geminiClient = new Client(apiKey: apiKey);
 // Console.WriteLine(
 //     response.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text
 //     ?? string.Empty);
-      
+
 var clientTransport = new StdioClientTransport(
     new StdioClientTransportOptions
     {
@@ -53,9 +61,13 @@ foreach (var tool in tools)
 
 IChatClient chatClient =
     new Client(apiKey: apiKey)
-        .AsIChatClient("gemini-3.6-flash")
+        .AsIChatClient("gemini-3.8-flash")
         .AsBuilder()
-        .UseFunctionInvocation()
+        .UseFunctionInvocation(loggerFactory,
+            configure: client =>
+            {
+                client.MaximumIterationsPerRequest = 10;
+            })
         .Build();
 
 var chatOptions = new ChatOptions
@@ -67,65 +79,80 @@ var chatOptions = new ChatOptions
 //     "Find the customer named Bob.",
 //     chatOptions);
 
-Console.Write("Enter your request: ");
-var userPrompt = Console.ReadLine() ?? string.Empty;
-var responseGoog = await chatClient.GetResponseAsync(userPrompt, chatOptions);
+var conversationHistory = new List<ChatMessage>();
 
-Console.WriteLine();
-Console.WriteLine("Gemini response:");
-Console.WriteLine(responseGoog.Text);
-
-Console.WriteLine("Non-Gemini calling");
-Console.WriteLine("Calling GetGreeting...");
-
-var greetingTool = tools.First(t => t.Name.ToLower() == "get_greeting");
-
-var result = await greetingTool.CallAsync(
-    new Dictionary<string, object?>
-    {
-        ["name"] = "Simeon"
-    });
-
-Console.WriteLine();
-Console.WriteLine("Result:");
-
-foreach (var content in result.Content)
+while (true)
 {
-    Console.WriteLine(content);
+    Console.Write("Enter your request: ");
+    var userPrompt = Console.ReadLine();
+
+    if (userPrompt is null || userPrompt.Equals("exit", StringComparison.OrdinalIgnoreCase))
+    {
+        break;
+    }
+
+    conversationHistory.Add(new ChatMessage(ChatRole.User, userPrompt));
+
+    var responseGoog = await chatClient.GetResponseAsync(conversationHistory, chatOptions);
+    conversationHistory.AddMessages(responseGoog);
+
+    Console.WriteLine();
+    Console.WriteLine("Gemini response:");
+    Console.WriteLine(responseGoog.Text);
+    Console.WriteLine();
 }
 
-Console.WriteLine();
-Console.WriteLine("Calling GetCustomer...");
+// Console.WriteLine("Non-Gemini calling");
+// Console.WriteLine("Calling GetGreeting...");
 
-var customerResult = await client.CallToolAsync(
-    "get_customer",
-    new Dictionary<string, object?>
-    {
-        ["customerId"] = 1
-    });
+// var greetingTool = tools.First(t => t.Name.ToLower() == "get_greeting");
 
-Console.WriteLine();
-Console.WriteLine("Customer result:");
+// var result = await greetingTool.CallAsync(
+//     new Dictionary<string, object?>
+//     {
+//         ["name"] = "Simeon"
+//     });
 
-foreach (var content in customerResult.Content)
-{
-    Console.WriteLine(content);
-}
+// Console.WriteLine();
+// Console.WriteLine("Result:");
 
-Console.WriteLine();
-Console.WriteLine("Calling Search Customer...");
+// foreach (var content in result.Content)
+// {
+//     Console.WriteLine(content);
+// }
 
-var customerSearchResult = await client.CallToolAsync(
-    "search_customer_by_name",
-    new Dictionary<string, object?>
-    {
-        ["name"] = "smith"
-    });
+// Console.WriteLine();
+// Console.WriteLine("Calling GetCustomer...");
 
-Console.WriteLine();
-Console.WriteLine("Customer result by name:");
+// var customerResult = await client.CallToolAsync(
+//     "get_customer",
+//     new Dictionary<string, object?>
+//     {
+//         ["customerId"] = 1
+//     });
 
-foreach (var content in customerSearchResult.Content)
-{
-    Console.WriteLine(content);
-}
+// Console.WriteLine();
+// Console.WriteLine("Customer result:");
+
+// foreach (var content in customerResult.Content)
+// {
+//     Console.WriteLine(content);
+// }
+
+// Console.WriteLine();
+// Console.WriteLine("Calling Search Customer...");
+
+// var customerSearchResult = await client.CallToolAsync(
+//     "search_customer_by_name",
+//     new Dictionary<string, object?>
+//     {
+//         ["name"] = "smith"
+//     });
+
+// Console.WriteLine();
+// Console.WriteLine("Customer result by name:");
+
+// foreach (var content in customerSearchResult.Content)
+// {
+//     Console.WriteLine(content);
+// }

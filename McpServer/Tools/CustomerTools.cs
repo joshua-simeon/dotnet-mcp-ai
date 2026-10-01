@@ -8,7 +8,10 @@ namespace McpServer.Tools;
 public static class CustomerTools
 {
     [McpServerTool]
-    [Description("Gets customer information by customer ID.")]
+    [Description(
+        "Gets one customer by ID. Use only when the customer ID is already known. " +
+        "Do not use after search_customer_by_name because its results already " +
+        "contain complete customer details.")]
     public static string GetCustomer(
         CustomerService customerService,
         [Description("The unique ID of the customer.")] int customerId)

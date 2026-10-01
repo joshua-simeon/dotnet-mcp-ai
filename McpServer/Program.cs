@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
-using System.ComponentModel;
 using McpServer.Repositories;
 using McpServer.Services;
 using Microsoft.EntityFrameworkCore;
@@ -34,16 +33,3 @@ builder.Services.AddDbContext<CustomerDbContext>(options =>
     options.UseSqlServer(connectionString));
     
 await builder.Build().RunAsync();
-
-[McpServerToolType]
-public static class GreetingTools
-{
-    [McpServerTool]
-    [Description("Returns a greeting for the specified person. descreption")]
-    public static string GetGreeting(
-        [Description("The name of the person to greet.")] string name)
-    {
-        return $"Hello, {name}! Welcome to your first .NET MCP server.";
-    }
-}
-

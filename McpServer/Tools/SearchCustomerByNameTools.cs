@@ -8,7 +8,10 @@ namespace McpServer.Tools;
 public static class SearchCustomerByNameTools
 {
     [McpServerTool]
-    [Description("Searches customers by name and returns matching customers")]
+    [Description(
+        "Searches customers by name and returns complete customer details, " +
+        "including ID, name, and email. Do not call get_customer afterward " +
+        "unless an additional lookup is explicitly required.")]
     public static string SearchCustomerByName(
         CustomerService customerService,
         [Description("The full or partial customer name to search for.")] string name)
