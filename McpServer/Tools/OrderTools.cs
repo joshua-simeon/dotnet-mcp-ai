@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using ModelContextProtocol;
 using McpServer.Services;
 using ModelContextProtocol.Server;
 
@@ -7,9 +8,9 @@ namespace McpServer.Tools;
 [McpServerToolType]
 public static class OrderTools
 {
-    [McpServerTool]
+    [McpServerTool(UseStructuredContent = true)]
     [Description("Gets order information by order ID.")]
-    public static string GetOrder(
+    public static OrderResult GetOrder(
         OrderService orderService,
         [Description("The unique ID of the order.")] int orderId)
     {
@@ -17,18 +18,19 @@ public static class OrderTools
 
         if (order == null)
         {
-            return $"Order ID {orderId} was not found.";
+            throw new McpException($"Order ID {orderId} was not found.");
         }
 
-        return $"Order ID: {order.Id}, " +
-               $"Customer ID: {order.CustomerId}, " +
-               $"Product: {order.Product}, " +
-               $"Amount: ${order.Amount:F2}, " +
-               $"Status: {order.Status}";
+        return new OrderResult(
+            order.Id,
+            order.CustomerId,
+            order.Product,
+            order.Amount,
+            order.Status);
     }
-    [McpServerTool]
+    [McpServerTool(UseStructuredContent = true)]
     [Description("Gets all orders for a specific customer.")]
-    public static string GetOrdersByCustomer(
+    public static OrderResult[] GetOrdersByCustomer(
     OrderService orderService,
     [Description("The unique ID of the customer.")] int customerId)
     {
@@ -36,15 +38,16 @@ public static class OrderTools
 
         if (orders.Count == 0)
         {
-            return $"No orders were found for customer ID {customerId}.";
+            throw new McpException($"No orders were found for customer ID {customerId}.");
         }
 
-        return string.Join(
-            Environment.NewLine,
-            orders.Select(o =>
-                $"Order ID: {o.Id}, " +
-                $"Product: {o.Product}, " +
-                $"Amount: ${o.Amount:F2}, " +
-                $"Status: {o.Status}"));
+        return orders
+            .Select(order => new OrderResult(
+                order.Id,
+                order.CustomerId,
+                order.Product,
+                order.Amount,
+                order.Status))
+            .ToArray();
     }
 }
