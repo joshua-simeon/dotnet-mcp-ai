@@ -1,24 +1,24 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using ModelContextProtocol.Server;
+using ModelContextProtocol.AspNetCore;
 using McpServer.Repositories;
 using McpServer.Services;
 using Microsoft.EntityFrameworkCore;
 using McpServer.Data;
 using Microsoft.Extensions.Configuration;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddUserSecrets<Program>(optional: true);
+builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddCommandLine(args);
 
-builder.Logging.AddConsole(options =>
+if (string.IsNullOrWhiteSpace(builder.Configuration["urls"]))
 {
-    options.LogToStandardErrorThreshold = LogLevel.Trace;
-});
+    builder.WebHost.UseUrls("http://0.0.0.0:5000");
+}
 
 builder.Services
     .AddMcpServer()
-    .WithStdioServerTransport()
+    .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.Stateless)
     .WithToolsFromAssembly();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<CustomerService>();
@@ -32,4 +32,6 @@ var connectionString =
 builder.Services.AddDbContext<CustomerDbContext>(options =>
     options.UseSqlServer(connectionString));
     
-await builder.Build().RunAsync();
+var app = builder.Build();
+app.MapMcp("/mcp");
+await app.RunAsync();

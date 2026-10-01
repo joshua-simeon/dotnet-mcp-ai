@@ -13,6 +13,8 @@ using var loggerFactory = LoggerFactory.Create(builder =>
 
 var configuration = new ConfigurationBuilder()
     .AddUserSecrets<Program>()
+    .AddEnvironmentVariables()
+    .AddCommandLine(args)
     .Build();
 
 var apiKey = configuration["Gemini:ApiKey"]
@@ -32,22 +34,24 @@ var geminiClient = new Client(apiKey: apiKey);
 //     response.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text
 //     ?? string.Empty);
 
-var clientTransport = new StdioClientTransport(
-    new StdioClientTransportOptions
+var serverUrl = configuration["McpServer:Endpoint"] ?? "http://localhost:5000/mcp";
+if (!Uri.TryCreate(serverUrl, UriKind.Absolute, out var serverEndpoint)
+    || (serverEndpoint.Scheme != Uri.UriSchemeHttp && serverEndpoint.Scheme != Uri.UriSchemeHttps))
+{
+    throw new InvalidOperationException("McpServer:Endpoint must be an absolute HTTP or HTTPS URL.");
+}
+
+var clientTransport = new HttpClientTransport(
+    new HttpClientTransportOptions
     {
         Name = "My MCP Server",
-        Command = "dotnet",
-        Arguments =
-        [
-            "run",
-            "--project",
-            "../McpServer/McpServer.csproj"
-        ]
+        Endpoint = serverEndpoint,
+        TransportMode = HttpTransportMode.StreamableHttp
     });
 
 await using var client = await McpClient.CreateAsync(clientTransport);
 
-Console.WriteLine("Connected to MCP server.");
+Console.WriteLine($"Connected to MCP server at {serverEndpoint}.");
 Console.WriteLine();
 
 Console.WriteLine("Available tools:");
