@@ -1,0 +1,18 @@
+# Allow only application inputs; exclude user secrets, local configuration,
+# build output, source control, and the web client from the build context.
+**
+!McpServer.csproj
+!Program.cs
+!appsettings.json
+!Data/
+!Data/*.cs
+!Models/
+!Models/*.cs
+!Repositories/
+!Repositories/*.cs
+!Services/
+!Services/*.cs
+!Tools/
+!Tools/*.cs
+!Migrations/
+!Migrations/*.cs
