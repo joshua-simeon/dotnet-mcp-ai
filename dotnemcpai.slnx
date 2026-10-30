@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="McpClient/McpClient.csproj" />
   <Project Path="McpServer/McpServer.csproj" />
+  <Project Path="OrderWorkflow.Worker/OrderWorkflow.Worker.csproj" />
 </Solution>
